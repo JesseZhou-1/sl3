@@ -98,7 +98,7 @@ Lrnr_xgboost <- R6Class(
       # Preserve raw data frame
       Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
       
-      args$data <- try(xgboost::xgb.DMatrix(Xdf, label = Y), silent = TRUE)
+      args$data <- try(xgboost::xgb.DMatrix(Xdf, label = Y)) # , silent = TRUE
 
       factor_levels <- lapply(Xdf, function(z) if (is.factor(z)) levels(z) else NULL)
 
@@ -116,7 +116,7 @@ Lrnr_xgboost <- R6Class(
         family <- outcome_type$glm_family(return_object = TRUE)
         link_fun <- args$family$linkfun
         offset <- task$offset_transformed(link_fun)
-        try(xgboost::setinfo(args$data, "base_margin", offset), silent = TRUE)
+        try(xgboost::setinfo(args$data, "base_margin", offset)) #, silent = TRUE
       } else {
         link_fun <- NULL
       }
