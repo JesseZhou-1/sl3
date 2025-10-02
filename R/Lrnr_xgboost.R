@@ -95,8 +95,11 @@ Lrnr_xgboost <- R6Class(
         Y <- as.numeric(Y) - 1
       }
 
+      # Preserve raw data frame
+      Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
+      
       # set up predictor data
-      Xmat <- as.matrix(task$X)
+      Xmat <- as.matrix(Xdf)
       if (is.integer(Xmat)) {
         Xmat[, 1] <- as.numeric(Xmat[, 1])
       }
@@ -151,8 +154,11 @@ Lrnr_xgboost <- R6Class(
     .predict = function(task = NULL) {
       fit_object <- private$.fit_object
 
+      # Preserve raw data frame
+      Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
+      
       # set up test data for prediction
-      Xmat <- as.matrix(task$X)
+      Xmat <- as.matrix(Xdf)
       if (is.integer(Xmat)) {
         Xmat[, 1] <- as.numeric(Xmat[, 1])
       }
