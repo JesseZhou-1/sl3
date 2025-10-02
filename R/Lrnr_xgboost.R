@@ -106,7 +106,7 @@ Lrnr_xgboost <- R6Class(
       if (nrow(Xmat) != nrow(task$X) & ncol(Xmat) == nrow(task$X)) {
         Xmat <- t(Xmat)
       }
-      args$data <- try(xgboost::xgb.DMatrix(Xmat, label = Y), silent = TRUE)
+      args$data <- try(xgboost::xgb.DMatrix(Xdf, label = Y), silent = TRUE)
 
       # specify weights
       if (task$has_node("weights")) {
@@ -169,7 +169,7 @@ Lrnr_xgboost <- R6Class(
       }
       stopifnot(nrow(Xmat_ord) == nrow(Xmat))
       # convert to xgb.DMatrix
-      xgb_data <- try(xgboost::xgb.DMatrix(Xmat_ord), silent = TRUE)
+      xgb_data <- try(xgboost::xgb.DMatrix(Xdf), silent = TRUE)
 
       # incorporate offset, if it wasspecified in training
       if (self$fit_object$training_offset) {
