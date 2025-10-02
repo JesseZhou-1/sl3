@@ -118,7 +118,9 @@ Lrnr_ranger <- R6Class(
       if (task$has_node("weights")) {
         args$case.weights <- task$weights
       }
-      data_in <- cbind(task$Y, task$X)
+      Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
+      data_in <- cbind(task$Y, Xdf)
+      # data_in <- cbind(task$Y, task$X)
       colnames(data_in)[1] <- task$nodes$outcome
       args$data <- data_in
       args$dependent.variable.name <- task$nodes$outcome
@@ -127,10 +129,12 @@ Lrnr_ranger <- R6Class(
       return(fit_object)
     },
     .predict = function(task) {
+      Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
+      
       # extract numeric predictions from custom class ranger.prediction
       predictions <- stats::predict(
         private$.fit_object,
-        data = task$X,
+        data = Xdf,
         type = "response",
         num.threads = self$params$num.threads
       )
