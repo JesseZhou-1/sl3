@@ -98,15 +98,9 @@ Lrnr_xgboost <- R6Class(
       # Preserve raw data frame
       Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
       
-      # set up predictor data
-      Xmat <- as.matrix(Xdf)
-      if (is.integer(Xmat)) {
-        Xmat[, 1] <- as.numeric(Xmat[, 1])
-      }
-      if (nrow(Xmat) != nrow(task$X) & ncol(Xmat) == nrow(task$X)) {
-        Xmat <- t(Xmat)
-      }
       args$data <- try(xgboost::xgb.DMatrix(Xdf, label = Y), silent = TRUE)
+
+      factor_levels <- lapply(Xdf, function(z) if (is.factor(z)) levels(z) else NULL)
 
       # specify weights
       if (task$has_node("weights")) {
@@ -148,6 +142,7 @@ Lrnr_xgboost <- R6Class(
       )
       fit_object$training_offset <- task$has_node("offset")
       fit_object$link_fun <- link_fun
+      fit_object$sl3_factor_levels <- factor_levels 
 
       return(fit_object)
     },
@@ -157,17 +152,12 @@ Lrnr_xgboost <- R6Class(
       # Preserve raw data frame
       Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
       
-      # set up test data for prediction
-      Xmat <- as.matrix(Xdf)
-      if (is.integer(Xmat)) {
-        Xmat[, 1] <- as.numeric(Xmat[, 1])
+      # relevel factors to training levels (keep order identical to train)
+      for (nm in names(Xdf)) {
+        tr_lvls <- fit_object$sl3_factor_levels[[nm]]
+        Xdf[[nm]] <- factor(Xdf[[nm]], levels = tr_lvls)
       }
-      # order of columns has to be the same in xgboost training and test data
-      Xmat_ord <- as.matrix(Xmat[, match(fit_object$feature_names, colnames(Xmat))])
-      if ((nrow(Xmat_ord) != nrow(Xmat)) & (ncol(Xmat_ord) == nrow(Xmat))) {
-        Xmat_ord <- t(Xmat_ord)
-      }
-      stopifnot(nrow(Xmat_ord) == nrow(Xmat))
+      
       # convert to xgb.DMatrix
       xgb_data <- try(xgboost::xgb.DMatrix(Xdf), silent = TRUE)
 
