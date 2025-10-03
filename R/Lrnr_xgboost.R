@@ -131,6 +131,8 @@ Lrnr_xgboost <- R6::R6Class(
         Xdf[] <- lapply(Xdf, function(z) if (is.character(z)) factor(z) else z)
       }
 
+      print(is.data.frame(Xdf))
+
       # Build DMatrix with hard check + diagnostics
       dm <- try(xgboost::xgb.DMatrix(data = Xdf, feature_names = colnames(Xdf)), silent = TRUE)
       if (inherits(dm, "try-error") || !inherits(dm, "xgb.DMatrix")) {
