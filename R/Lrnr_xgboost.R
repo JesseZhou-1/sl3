@@ -132,8 +132,7 @@ Lrnr_xgboost <- R6::R6Class(
       }
 
       # Build DMatrix with hard check + diagnostics
-      dm <- try(xgboost::xgb.DMatrix(data = Xdf, label = Y,
-                                     feature_names = colnames(Xdf)), silent = TRUE)
+      dm <- try(xgboost::xgb.DMatrix(data = Xdf, feature_names = colnames(Xdf)), silent = TRUE)
       if (inherits(dm, "try-error") || !inherits(dm, "xgb.DMatrix")) {
         private$.stop_with_context("xgb.DMatrix() did not return an xgb.DMatrix", Xdf, err = attr(dm, "condition"))
       }
