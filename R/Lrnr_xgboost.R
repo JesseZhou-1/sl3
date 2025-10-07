@@ -187,18 +187,16 @@ Lrnr_xgboost <- R6Class(
       for (nm in names(Xdf)) {
         tr_lvls <- meta$sl3_factor_levels[[nm]]
         if (!is.null(tr_lvls) && is.factor(Xdf[[nm]])) {
+          # (optional) track NAs due to unseen levels
           before_na <- sum(is.na(Xdf[[nm]]))
           Xdf[[nm]] <- factor(Xdf[[nm]], levels = tr_lvls)
-          after_na  <- sum(is.na(Xdf[[nm]]))
+          after_na <- sum(is.na(Xdf[[nm]]))
           if (after_na > before_na) {
             message("xgboost predict: introduced ", after_na - before_na,
                     " NA(s) in '", nm, "' due to unseen levels")
           }
         }
       }
-    
-      # empty guard
-      if (nrow(Xdf) == 0L) return(numeric(0))
     
       xgb_data <- try(xgboost::xgb.DMatrix(Xdf), silent = TRUE)
       if (!inherits(xgb_data, "xgb.DMatrix")) stop("Failed to build DMatrix for prediction.")
@@ -209,23 +207,25 @@ Lrnr_xgboost <- R6Class(
         xgboost::setinfo(xgb_data, "base_margin", offset)
       }
     
-      # best iteration -> iterationrange (future-proof, no warnings)
-      best_iter <- try(xgboost::xgb.attr(booster, "best_iteration"), silent = TRUE)
-      if (!inherits(best_iter, "try-error") && !is.null(best_iter)) {
-        ir <- as.integer(c(0L, as.integer(best_iter) + 1L))
-        preds <- stats::predict(booster, newdata = xgb_data, iterationrange = ir)
+      # --- ntreelimit logic  ---
+      ntreelimit <- 0L
+      booster <- fit_object$booster
+      
+      # try best_ntreelimit first (sometimes stored as character)
+      bn <- booster[["best_ntreelimit"]]
+      if (!is.null(bn)) {
+        ntreelimit <- as.integer(bn)
       } else {
-        message("Can't find best_iteration")
-        preds <- stats::predict(booster, newdata = xgb_data)
+        # fall back to best_iteration attribute if present
+        bi <- try(xgboost::xgb.attr(booster, "best_iteration"), silent = TRUE)
+        if (!inherits(bi, "try-error") && !is.null(bi)) {
+          ntreelimit <- as.integer(bi)  # attribute is character; coerce
+        }
       }
-    
-      # reshape for multiclass
-      if (private$.training_outcome_type$type == "categorical") {
-        k <- length(private$.training_outcome_type$levels)
-        preds <- matrix(preds, ncol = k, byrow = TRUE)
-      }
-    
-      return(preds)
+      
+      # call predict (you can keep reshape=TRUE for now if you prefer)
+      preds <- stats::predict(booster, newdata = xgb_data,
+                              ntreelimit = ntreelimit, reshape = TRUE)
     },
     .required_packages = c("xgboost")
   )
