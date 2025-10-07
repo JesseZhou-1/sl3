@@ -226,7 +226,7 @@ Lrnr_xgboost <- R6Class(
       }
     
       return(preds)
-    }
+    },
     .required_packages = c("xgboost")
   )
 )
