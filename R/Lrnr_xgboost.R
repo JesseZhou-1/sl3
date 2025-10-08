@@ -207,15 +207,15 @@ Lrnr_xgboost <- R6Class(
         xgboost::setinfo(xgb_data, "base_margin", offset)
       }
     
-      # 4) Predict with NO limit (uses all trees; if model had ES and you use xgboost::xgboost
-      #    class, its high-level predict would default to the best iteration. For xgb.Booster,
-      #    just omit limits unless you really need a subset.)
-      preds <- stats::predict(booster, newdata = xgb_data)
+      predictions <- stats::predict(booster, newdata = xgb_data)
     
-      # 5) Reshape for multiclass
       if (private$.training_outcome_type$type == "categorical") {
         k <- length(private$.training_outcome_type$levels)
-        preds <- matrix(preds, ncol = k, byrow = TRUE)
+        predictions <- matrix(predictions, ncol = k, byrow = TRUE)
+        colnames(predictions) <- private$.training_outcome_type$levels
+        
+        # pack predictions in a single column
+        predictions <- pack_predictions(predictions)
       }
       return(preds)
     },
