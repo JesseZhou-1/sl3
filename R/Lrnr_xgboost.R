@@ -212,7 +212,7 @@ Lrnr_xgboost <- R6Class(
       if (private$.training_outcome_type$type == "categorical") {
         k <- length(private$.training_outcome_type$levels)
         predictions <- matrix(predictions, ncol = k, byrow = TRUE)
-        colnames(predictions) <- private$.training_outcome_type$levels
+        # colnames(predictions) <- private$.training_outcome_type$levels
         
         # pack predictions in a single column
         predictions <- pack_predictions(predictions)
