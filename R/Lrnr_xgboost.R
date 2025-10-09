@@ -163,13 +163,11 @@ Lrnr_xgboost <- R6Class(
       )
     
       # DO NOT mutate the booster; wrap it instead
-      factor_levels <- lapply(Xdf, function(z) if (is.factor(z)) levels(z) else NULL)
       fit_object <- list(
         booster = fit_booster,
         meta = list(
           training_offset   = task$has_node("offset"),
-          link_fun          = link_fun,
-          sl3_factor_levels = factor_levels
+          link_fun          = link_fun
         )
       )
       class(fit_object) <- c("sl3_xgb_fit", "list")
@@ -184,20 +182,6 @@ Lrnr_xgboost <- R6Class(
       # raw covariates; relevel to training levels
       Xdf <- task$get_data(columns = task$nodes$covariates, expand_factors = FALSE)
     
-      for (nm in names(Xdf)) {
-        tr_lvls <- meta$sl3_factor_levels[[nm]]
-        if (!is.null(tr_lvls) && is.factor(Xdf[[nm]])) {
-          # (optional) track NAs due to unseen levels
-          before_na <- sum(is.na(Xdf[[nm]]))
-          Xdf[[nm]] <- factor(Xdf[[nm]], levels = tr_lvls)
-          after_na <- sum(is.na(Xdf[[nm]]))
-          if (after_na > before_na) {
-            message("xgboost predict: introduced ", after_na - before_na,
-                    " NA(s) in '", nm, "' due to unseen levels")
-          }
-        }
-      }
-    
       xgb_data <- try(xgboost::xgb.DMatrix(Xdf), silent = TRUE)
       if (!inherits(xgb_data, "xgb.DMatrix")) stop("Failed to build DMatrix for prediction.")
     
@@ -207,13 +191,9 @@ Lrnr_xgboost <- R6Class(
         xgboost::setinfo(xgb_data, "base_margin", offset)
       }
     
-      predictions <- stats::predict(booster, newdata = xgb_data)
+      predictions <- stats::predict(booster, newdata = xgb_data, strict_shape=TRUE)
     
       if (private$.training_outcome_type$type == "categorical") {
-        k <- length(private$.training_outcome_type$levels)
-        predictions <- matrix(predictions, ncol = k, byrow = TRUE)
-        colnames(predictions) <- private$.training_outcome_type$levels
-        
         # pack predictions in a single column
         predictions <- pack_predictions(predictions)
       }
